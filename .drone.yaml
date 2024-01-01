@@ -1,0 +1,217 @@
+kind: pipeline
+name: helloworld
+type: kubernetes
+
+# platform:
+#   os: linux
+#   arch: amd64
+
+environment:
+   DOCKER_REPO: docker.hub.com
+   DOCKER_SERVER: tcp://127.0.0.1:2375
+#   PROJECT: dsa
+#   NOTPROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-notprod.crt
+#   NOTPROD_KUBE_SERVER: https://kube-api-notprod.notprod.acp.homeoffice.gov.uk
+#   PROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-prod.crt
+#   PROD_KUBE_SERVER: https://kube-api-prod.prod.acp.homeoffice.gov.uk
+#   HELM_REPO_URL: https://artifactory.digital.homeoffice.gov.uk/artifactory
+#   # Used to retrieve Helm charts
+#   HELM_VIRTUAL_REPO_NAME: dsa-common-helm-virtual
+#   # Used to upload Helm charts
+#   HELM_LOCAL_REPO_NAME: dsa-common-helm
+#   IMAGE_NAME: dsa-ksql
+#   AWS_DEFAULT_REGION: eu-west-2
+
+
+
+
+# steps:
+# - name: retrieve-secrets
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/hashicorp-vault:1.6.0
+#   commands:
+#     - export VAULT_ADDR=$${VAULT_ADDR_DEV}
+#     # Get the Artifactory secrets
+#     - echo "export ARTIFACTORY_USERNAME=$(vault read -field=username secret/dsa/cdlz-dbstream/admin/artifactory/username)" >> set_drone_secrets.sh
+#     - echo "export ARTIFACTORY_PASSWORD=$(vault read -field=password secret/dsa/cdlz-dbstream/admin/artifactory/password)" >> set_drone_secrets.sh
+#     # Get the Helm secrets
+#     - echo "export HELM_USERNAME=$(vault read -field=username secret/dsa/cdlz-dbstream/admin/helm/dsa-common-username)" >> set_drone_secrets.sh
+#     - echo "export HELM_PASSWORD=$(vault read -field=password secret/dsa/cdlz-dbstream/admin/helm/dsa-common-password)" >> set_drone_secrets.sh
+#   environment:
+#     VAULT_ADDR_DEV:
+#       from_secret: VAULT_ADDR_DEV
+#     VAULT_TOKEN:
+#       from_secret: VAULT_TOKEN_DEV
+
+# - name: bump-version
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/node-git:15.4.1-alpine3.12
+#   commands:
+#     - mkdir work
+#     - cd work
+#     - git clone --branch version https://gitlab.digital.homeoffice.gov.uk/$${PROJECT}/$${IMAGE_NAME}
+#     - cd $${IMAGE_NAME}
+#     - export CURRENT_VERSION=$(cat version)
+#     - cat version
+#     - npm install semver > /dev/null
+#     - npx semver -i patch $${CURRENT_VERSION} > version
+#     - git add version
+#     - git commit -am "Update version"
+#     - git push
+#     - cp version ../../next_version
+#     - cat ../../next_version
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
+
+# - name: build-docker
+#   pull: if-not-exists
+#   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+#   commands:
+#     # wait for docker service to be up before running docker build
+#     - n=0; while [ "$n" -lt 60 ] && [ ! docker stats --no-stream ]; do n=$(( n + 1 )); sleep 1; done
+#     # if next_version file exists then use it otherwise use a dummy version to build the docker image
+#     - if [ -f next_version ]; then export IMAGE_VERSION=$(cat next_version); else export IMAGE_VERSION=0.0.1; fi
+#     - source set_drone_secrets.sh
+#     - docker login -u="$${ARTIFACTORY_USERNAME}" -p="$${ARTIFACTORY_PASSWORD}" "$${DOCKER_REPO}"
+#     # Also tag the image with the DRONE_BUILD_NUMBER so we can use that variable in the Anchore scan
+#     - docker build . -t $${IMAGE_NAME}:$${IMAGE_VERSION} -t $${IMAGE_NAME}:$${DRONE_BUILD_NUMBER}
+#   when:
+#     branch:
+#       - master
+#       - feature/*
+#     event:
+#       - push
+
+# - name: Anchore Scan the image
+#   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/anchore-submission:latest
+#   pull: always
+#   environment:
+#     NOTE: Image name can't be a variable here!
+#     IMAGE_NAME: dsa-ksql:${DRONE_BUILD_NUMBER}
+#     LOCAL_IMAGE: true
+#     SHOW_ALL_VULNERABILITIES: true
+#     TOLERATE: medium
+#     FAIL_ON_DETECTION: false
+#   when:
+#     branch:
+#       - master
+#       - feature/*
+#     event:
+#       - push
+
+# - name: Push Image to Artifactory
+#   pull: if-not-exists
+#   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+#   commands:
+#     - export IMAGE_VERSION=$(cat next_version)
+#     - source set_drone_secrets.sh
+#     - docker login -u="$${ARTIFACTORY_USERNAME}" -p="$${ARTIFACTORY_PASSWORD}" "$${DOCKER_REPO}"
+#     - docker tag $${IMAGE_NAME}:$${IMAGE_VERSION} $${DOCKER_REPO}/$${PROJECT}/$${IMAGE_NAME}:$${IMAGE_VERSION}
+#     - docker push $${DOCKER_REPO}/$${PROJECT}/$${IMAGE_NAME}:$${IMAGE_VERSION}
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
+
+# - name: helm-lint
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/helm:v3.4.0
+#   commands:
+#     # Update the common chart dependency
+#     - source set_drone_secrets.sh
+#     - helm repo add $${HELM_VIRTUAL_REPO_NAME} $${HELM_REPO_URL}/$${HELM_VIRTUAL_REPO_NAME} --username $${HELM_USERNAME} --password $${HELM_PASSWORD}
+#     - helm repo update
+#     - helm dep up helm/$${IMAGE_NAME}
+#     # Lint the chart
+#     - helm lint helm/$${IMAGE_NAME}
+#   when:
+#     branch:
+#       - feature/*
+#       - master
+#     event:
+#       - push
+
+# - name: helm-package
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/helm:v3.4.0
+#   commands:
+#     - export IMAGE_VERSION=$(cat next_version)
+#     # Update the common chart dependency
+#     - source set_drone_secrets.sh
+#     - helm repo add $${HELM_VIRTUAL_REPO_NAME} $${HELM_REPO_URL}/$${HELM_VIRTUAL_REPO_NAME} --username $${HELM_USERNAME} --password $${HELM_PASSWORD}
+#     - helm repo update
+#     - helm dep up helm/$${IMAGE_NAME}
+#     # Package the chart
+#     - helm repo add $${HELM_VIRTUAL_REPO_NAME} $${HELM_REPO_URL}/$${HELM_VIRTUAL_REPO_NAME} --username $${HELM_USERNAME} --password $${HELM_PASSWORD}
+#     - helm repo update
+#     - helm package --version $${IMAGE_VERSION} --app-version $${IMAGE_VERSION} helm/$${IMAGE_NAME}
+#     - export CHART_TO_UPLOAD=$${IMAGE_NAME}-$${IMAGE_VERSION}.tgz
+#     - curl -u "$${HELM_USERNAME}":"$${HELM_PASSWORD}" -T $${CHART_TO_UPLOAD} "$${HELM_REPO_URL}/$${HELM_LOCAL_REPO_NAME}/$${CHART_TO_UPLOAD}"
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
+
+# - name: tag-release
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/node-git:15.4.1-alpine3.12
+#   commands:
+#     - export IMAGE_VERSION=$(cat next_version)
+#     - git clone https://gitlab.digital.homeoffice.gov.uk/$${PROJECT}/$${IMAGE_NAME} -b $${DRONE_BRANCH}
+#     - cd $${IMAGE_NAME}
+#     - git tag -a $${IMAGE_VERSION} -m "Release tag - $${IMAGE_VERSION}"
+#     - git push --tags
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
+
+# - name: trigger-umbrella-chart
+#   image: plugins/downstream
+#   settings:
+#     server: https://drone-gl.acp.homeoffice.gov.uk
+#     token:
+#       from_secret: drone_token
+#     last_successful: true
+#     deploy: develop
+#     repositories:
+#       - dsa/cdlz-dbstream-umbrella@master
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
+
+# - name: renew-vault-tokens
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/hashicorp-vault:1.6.0
+#   commands:
+#     # Renew Dev Drone Vault Token
+#     - export VAULT_TOKEN=$${VAULT_TOKEN_DEV}
+#     - export VAULT_ADDR=$${VAULT_ADDR_DEV}
+#     - vault token renew > /dev/null
+#   environment:
+#     VAULT_ADDR_DEV:
+#       from_secret: VAULT_ADDR_DEV
+#     VAULT_TOKEN_DEV:
+#       from_secret: VAULT_TOKEN_DEV
+#   when:
+#     event:
+#       - cron
+#     cron:
+#       - renew-vault-tokens
+
+# services:
+#   - name: docker
+#     image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
+#   - name: anchore-submission-server
+#     image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/anchore-submission:latest
+#     pull: always
+#     commands:
+#       - /run.sh server
