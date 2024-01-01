@@ -14,16 +14,23 @@ environment:
 #   NOTPROD_KUBE_SERVER: https://kube-api-notprod.notprod.acp.homeoffice.gov.uk
 #   PROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-prod.crt
 #   PROD_KUBE_SERVER: https://kube-api-prod.prod.acp.homeoffice.gov.uk
-#   HELM_REPO_URL: https://artifactory.digital.homeoffice.gov.uk/artifactory
+   HELM_REPO_URL: https://github.com/samengr80
 #   # Used to retrieve Helm charts
 #   HELM_VIRTUAL_REPO_NAME: dsa-common-helm-virtual
 #   # Used to upload Helm charts
-#   HELM_LOCAL_REPO_NAME: dsa-common-helm
+   HELM_LOCAL_REPO_NAME: helloworld
 #   IMAGE_NAME: dsa-ksql
 #   AWS_DEFAULT_REGION: eu-west-2
 
-
-
+steps:
+- name: deploy-helloworld
+  commands:
+  - helm 
+  when:
+    branch:
+      - master
+    event:
+      - push
 
 # steps:
 # - name: retrieve-secrets
