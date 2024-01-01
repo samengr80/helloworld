@@ -9,28 +9,47 @@ type: kubernetes
 environment:
    DOCKER_REPO: docker.hub.com
    DOCKER_SERVER: tcp://127.0.0.1:2375
+   HELM_REPO_URL: https://github.com/samengr80
+   HELM_USERNAME: 
+     from_secret: GITHUB_USERNAME
+   HELM_PASSWORD:
+     from_secret: GITHUB_PASSWORD 
 #   PROJECT: dsa
 #   NOTPROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-notprod.crt
 #   NOTPROD_KUBE_SERVER: https://kube-api-notprod.notprod.acp.homeoffice.gov.uk
 #   PROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-prod.crt
 #   PROD_KUBE_SERVER: https://kube-api-prod.prod.acp.homeoffice.gov.uk
-   HELM_REPO_URL: https://github.com/samengr80
 #   # Used to retrieve Helm charts
-#   HELM_VIRTUAL_REPO_NAME: dsa-common-helm-virtual
 #   # Used to upload Helm charts
-   HELM_LOCAL_REPO_NAME: helloworld
+   HELM_CHART_NAME: helloworld
 #   IMAGE_NAME: dsa-ksql
 #   AWS_DEFAULT_REGION: eu-west-2
 
 steps:
-- name: deploy-helloworld
+- name: helm-lint
+  pull: if-not-exists
+  image: quay.io/ukhomeofficedigital/helm:v3.4.0
   commands:
-  - helm 
+    - helm repo add $${HELM_CHART_NAME} $${HELM_REPO_URL}/$${HELM_CHART_NAME:} --username $${HELM_USERNAME} --password $${HELM_PASSWORD}
+    - helm repo update
+    - helm dep up helm/$${HELM_CHART_NAME}
+    # Lint the chart
+    - helm lint helm/$${HELM_CHART_NAME}
   when:
     branch:
       - master
     event:
       - push
+
+
+# - name: deploy-helloworld
+#   commands:
+#   - helm 
+#   when:
+#     branch:
+#       - master
+#     event:
+#       - push
 
 # steps:
 # - name: retrieve-secrets
