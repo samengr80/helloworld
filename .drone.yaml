@@ -39,7 +39,7 @@ steps:
     - helm lint helm/$${HELM_CHART_NAME}
   when:
     branch:
-      - master
+      - main
     event:
       - push
 
