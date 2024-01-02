@@ -28,6 +28,12 @@ environment:
 #   AWS_DEFAULT_REGION: eu-west-2
 
 steps:
+- name: greeting
+  image: alpine
+  commands:
+  - echo hello
+  - echo world
+  
 - name: helm-lint
   pull: if-not-exists
   image: quay.io/ukhomeofficedigital/helm:v3.4.0
