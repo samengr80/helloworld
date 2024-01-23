@@ -6,15 +6,15 @@ type: kubernetes
 #   os: linux
 #   arch: amd64
 
-environment:
-  DOCKER_REPO: docker.hub.com
-  DOCKER_SERVER: tcp://127.0.0.1:2375
-  HELM_REPO_URL: https://github.com/samengr80
-  HELM_LOCAL_REPO_NAME: helm-chart
-  HELM_USERNAME: 
-    from_secret: GITHUB_USERNAME
-  HELM_PASSWORD:
-    from_secret: GITHUB_PASSWORD 
+# environment:
+#   DOCKER_REPO: docker.hub.com
+#   DOCKER_SERVER: tcp://127.0.0.1:2375
+#   HELM_REPO_URL: https://github.com/samengr80
+#   HELM_LOCAL_REPO_NAME: helm-chart
+#   HELM_USERNAME: 
+#     from_secret: GITHUB_USERNAME
+#   HELM_PASSWORD:
+#     from_secret: GITHUB_PASSWORD 
   
 #   PROJECT: dsa
 #   NOTPROD_KUBE_CERTIFICATE_AUTHORITY: https://raw.githubusercontent.com/UKHomeOffice/acp-ca/master/acp-notprod.crt
@@ -23,7 +23,7 @@ environment:
 #   PROD_KUBE_SERVER: https://kube-api-prod.prod.acp.homeoffice.gov.uk
 #   # Used to retrieve Helm charts
 #   # Used to upload Helm charts
-  HELM_CHART_NAME: helloworld
+  # HELM_CHART_NAME: helloworld
 #   IMAGE_NAME: dsa-ksql
 #   AWS_DEFAULT_REGION: eu-west-2
 
