@@ -1,6 +1,6 @@
 kind: pipeline
 name: helloworld
-type: kubernetes
+type: docker
 
 # platform:
 #   os: linux
@@ -27,27 +27,33 @@ environment:
 #   IMAGE_NAME: dsa-ksql
 #   AWS_DEFAULT_REGION: eu-west-2
 
+
 steps:
+- name: example
+  image: plugins/docker
+  settings:
+    mtu: 1500
+
 - name: greeting
   image: alpine
   commands:
   - echo hello
   - echo world
-  
-- name: helm-lint
-  pull: if-not-exists
-  image: quay.io/ukhomeofficedigital/helm:v3.4.0
-  commands:
-    - helm repo add $${HELM_VIRTUAL_REPO_NAME} $${HELM_REPO_URL}/$${HELM_VIRTUAL_REPO_NAME} --password $${HELM_PASSWORD}
-    - helm repo update
-    # - helm dep up helm/$${HELM_CHART_NAME}
-    # Lint the chart
-    - helm lint helm/$${HELM_CHART_NAME}
-  when:
-    branch:
-      - main
-    event:
-      - push
+
+# - name: helm-lint
+#   pull: if-not-exists
+#   image: quay.io/ukhomeofficedigital/helm:v3.4.0
+#   commands:
+#     - helm repo add $${HELM_VIRTUAL_REPO_NAME} $${HELM_REPO_URL}/$${HELM_VIRTUAL_REPO_NAME} --password $${HELM_PASSWORD}
+#     - helm repo update
+#     # - helm dep up helm/$${HELM_CHART_NAME}
+#     # Lint the chart
+#     - helm lint helm/$${HELM_CHART_NAME}
+#   when:
+#     branch:
+#       - main
+#     event:
+#       - push
 
 
 # - name: deploy-helloworld
