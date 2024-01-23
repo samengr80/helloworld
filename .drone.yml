@@ -1,6 +1,6 @@
 kind: pipeline
 name: helloworld
-type: docker
+type: kubernetes
 
 # platform:
 #   os: linux
@@ -29,10 +29,10 @@ environment:
 
 
 steps:
-- name: example
-  image: plugins/docker
-  settings:
-    mtu: 1500
+# - name: example
+#   image: plugins/docker
+#   settings:
+#     mtu: 1500
 
 - name: greeting
   image: alpine
