@@ -56,14 +56,23 @@ steps:
 #       - push
 
 
-# - name: deploy-helloworld
-#   commands:
-#   - helm 
-#   when:
-#     branch:
-#       - master
-#     event:
-#       - push
+- name: lint-helloworld
+  commands:
+  - helm lint helm/
+  when:
+    branch:
+      - master
+    event:
+      - push
+
+- name: depoy-helloworld
+  commands:
+  - helm install nginx helm/ 
+  when:
+    branch:
+      - master
+    event:
+      - push
 
 # steps:
 # - name: retrieve-secrets
