@@ -56,14 +56,16 @@ steps:
 #       - push
 
 
-# - name: lint-helloworld
-#   commands:
-#   - helm lint helm/
-#   when:
-#     branch:
-#       - master
-#     event:
-#       - push
+- name: lint-helloworld
+  pull: if-not-exists
+  image: quay.io/ukhomeofficedigital/helm:v3.4.0
+  commands:
+  - helm lint helm/
+  when:
+    branch:
+      - master
+    event:
+      - push
 
 # - name: depoy-helloworld
 #   commands:
